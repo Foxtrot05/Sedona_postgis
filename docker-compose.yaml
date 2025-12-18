@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # --- Container 1: Your Python/Sedona Engine ---
+  sedona-app:
+    build: .
+    container_name: sedona_engine
+    volumes:
+      - .:/app  # <--- THE MAGIC: Syncs your current folder to Docker
+    environment:
+      - SPARK_DRIVER_MEMORY=2g
+    depends_on:
+      - sedona-db
+    command: tail -f /dev/null
+
+  # --- Container 2: PostgreSQL Database ---
+  sedona-db:
+    image: postgis/postgis:16-3.4  # Uses PostGIS image (Postgres + Spatial)
+    container_name: sedona_postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: geodb
+    ports:
+      - "5433:5432"  # Allows you to connect from outside if needed
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
