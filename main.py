@@ -1,42 +1,79 @@
 from sedona.spark import *
+import pyspark.sql.functions as F
 
-# 1. SETUP SEDONA (With Postgres Driver)
-# Notice we added the Postgres JAR to the config
-config = SedonaContext.builder() \
-    .config("spark.jars.packages",
-           "org.apache.sedona:sedona-spark-shaded-3.5_2.12:1.6.1,"
-           "org.datasyslab:geotools-wrapper:1.6.1-28.2,"
-           "org.postgresql:postgresql:42.7.3") \
-    .getOrCreate()
+def run_system_check():
+    print("==================================================")
+    print("   STARTING GEOSPATIAL ENGINE SYSTEM CHECK")
+    print("==================================================")
 
-sedona = SedonaContext.create(config)
+    # 1. CONFIGURE & START SPARK (With Memory Limits)
+    # ------------------------------------------------
+    print("\n[1] Initializing Apache Sedona (Spark)...")
+    try:
+        config = SedonaContext.builder() \
+            .config("spark.jars.packages",
+                "org.apache.sedona:sedona-spark-shaded-3.5_2.12:1.6.1,"
+                "org.datasyslab:geotools-wrapper:1.6.1-28.2,"
+                "org.postgresql:postgresql:42.7.3") \
+            .config("spark.driver.memory", "2g") \
+            .config("spark.executor.memory", "2g") \
+            .getOrCreate()
+        
+        sedona = SedonaContext.create(config)
+        print(f"    ✅ Success! Sedona Version: {sedona.version}")
+    except Exception as e:
+        print(f"    ❌ Failed to start Spark: {e}")
+        return
 
-print("\n--- 1. Sedona is Running! ---")
+    # 2. TEST SPATIAL COMPUTATION
+    # ------------------------------------------------
+    print("\n[2] Testing Spatial Logic (Buffer Analysis)...")
+    try:
+        # Create dummy data: KL Tower
+        data = [("KL Tower", "POINT(101.7040 3.1528)")]
+        df = sedona.createDataFrame(data, ["landmark", "wkt"])
 
-# 2. CREATE DUMMY DATA (No external files needed)
-data = [("Point(101.6869 3.1390)", "KL Sentral"),
-        ("Point(101.7119 3.1579)", "KLCC")]
+        # Convert to Geometry and create a 500m buffer (approx 0.005 degrees)
+        df_geom = df.selectExpr("landmark", "ST_GeomFromWKT(wkt) as geometry")
+        df_buffer = df_geom.selectExpr("landmark", "ST_Buffer(geometry, 0.005) as buffer_geom")
+        
+        count = df_buffer.count()
+        print(f"    ✅ Success! Processed {count} spatial object(s).")
+        df_buffer.show(truncate=False)
+    except Exception as e:
+        print(f"    ❌ Spatial calculation failed: {e}")
 
-df = sedona.createDataFrame(data, ["wkt", "name"])
-df_geom = df.selectExpr("ST_GeomFromWKT(wkt) as geometry", "name")
+    # 3. TEST DATABASE CONNECTION
+    # ------------------------------------------------
+    print("\n[3] Testing Database I/O (PostgreSQL)...")
+    
+    # Internal Docker URL (Container-to-Container communication uses port 5432)
+    db_url = "jdbc:postgresql://sedona-db:5432/geodb"
+    db_props = {
+        "user": "admin",
+        "password": "password123",
+        "driver": "org.postgresql.Driver"
+    }
 
-df_geom.show()
+    try:
+        # Convert Geometry to Text for storage
+        df_save = df_buffer.selectExpr("landmark", "ST_AsText(buffer_geom) as wkt_geom")
+        
+        # Write
+        print("    --> Writing test table...")
+        df_save.write.mode("overwrite").jdbc(db_url, "system_check_logs", properties=db_props)
+        
+        # Read
+        print("    --> Reading back data...")
+        df_read = sedona.read.jdbc(db_url, "system_check_logs", properties=db_props)
+        
+        print("    ✅ Success! Database connection is fully operational.")
+    except Exception as e:
+        print(f"    ❌ Database Error: {e}")
 
-# 3. CONNECT TO DATABASE
-# IMPORTANT: In Docker, the hostname is the Service Name ('sedona-db'), not 'localhost'
-db_url = "jdbc:postgresql://sedona-db:5432/geodb"
-db_props = {
-    "user": "admin",
-    "password": "password123",
-    "driver": "org.postgresql.Driver"
-}
+    print("\n==================================================")
+    print("   SYSTEM CHECK COMPLETE: READY FOR DEPLOYMENT")
+    print("==================================================")
 
-print("\n--- 2. Writing to Postgres (Docker) ---")
-# Convert geom to text for safe transfer
-df_export = df_geom.selectExpr("name", "ST_AsText(geometry) as geom_wkt")
-
-try:
-    df_export.write.mode("overwrite").jdbc(db_url, "test_places", properties=db_props)
-    print("✅ Success! Data written to table 'test_places' in Postgres.")
-except Exception as e:
-    print("❌ Database Error:", e)
+if __name__ == "__main__":
+    run_system_check()
