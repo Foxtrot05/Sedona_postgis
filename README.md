@@ -6,81 +6,85 @@ AUTHOR:  Imran Mazlan
 
 [1] PREREQUISITES
 ------------------------------------------------------------------------------
-Before you start, you only need ONE tool installed on your laptop:
-
 1. Install Docker Desktop:
    - Windows/Mac: https://www.docker.com/products/docker-desktop/
-   - Ubuntu: sudo apt-get install docker-compose-plugin
+   - Linux: sudo apt-get install docker-compose-plugin
 
-   *Verify installation by opening a terminal and running:*
-   docker compose version
+2. Install VS Code Extension (REQUIRED for Notebooks):
+   - Search for "Dev Containers" (by Microsoft) in VS Code and install it.
 
 [2] FOLDER STRUCTURE
 ------------------------------------------------------------------------------
-Ensure you have the following files in this folder (do not rename them):
-
 /sedona-project
   ├── Dockerfile             (Builds Python/Java/Spark OS)
   ├── docker-compose.yml     (Orchestrates the Engine and Database)
   ├── requirements.txt       (Python libraries list)
   ├── main.py                (Test script)
-  └── README.txt             (This file)
+  └── test.ipynb             (Test notebook)
 
 [3] SETUP & STARTUP (Do this once)
 ------------------------------------------------------------------------------
-1. Open your terminal (or Command Prompt/PowerShell) inside this folder.
-
+1. Open terminal inside this folder.
 2. Build and Start the containers:
    docker compose up -d --build
 
-   *Note: The first run will take 5-10 minutes to download dependencies.*
-
-3. Check if everything is running:
+3. Verify they are running:
    docker compose ps
+   (You should see 'sedona_engine' and 'sedona_postgres' as "Up")
 
-   *You should see two services listed as "Up" or "Running":*
-   - sedona_engine  (The AI Logic)
-   - sedona_postgres (The Database)
-
-[4] HOW TO RUN CODE
+[4] HOW TO RUN PYTHON SCRIPTS (.py)
 ------------------------------------------------------------------------------
-To run Python scripts, we execute them *inside* the Docker container.
+To run standard scripts like 'main.py':
 
-Run the test script:
+1. Edit the file locally in VS Code.
+2. Run this command in your terminal:
    docker compose exec sedona-app python main.py
 
-*DEVELOPMENT WORKFLOW:*
-1. Edit 'main.py' (or any .py file) in your local VS Code.
-2. Save the file.
-3. Run the command above in your terminal.
-   (Changes are synced instantly; no need to restart Docker).
-
-[5] DATABASE ACCESS (Optional)
+[5] HOW TO RUN NOTEBOOKS (.ipynb)
 ------------------------------------------------------------------------------
-If you want to view the data using DBeaver or pgAdmin:
+To use Jupyter Notebooks, we must connect VS Code *inside* the container.
+
+1. Click the blue "><" button in the bottom-left corner of VS Code.
+2. Select "Attach to Running Container..." from the menu.
+3. Choose "/sedona_engine".
+   (A new VS Code window will open. This window is inside Docker).
+
+4. Open your .ipynb file in this new window.
+
+5. IMPORTANT: SELECT KERNEL
+   - Look at the top-right of the notebook editor.
+   - Click "Select Kernel".
+   - Choose "Python Environments..." -> "Python 3.10 /usr/local/bin/python".
+   - Ensure the code highlighting turns colorful (not plain text).
+
+6. Run your cells!
+
+[6] DATABASE ACCESS
+------------------------------------------------------------------------------
+To view data using DBeaver or pgAdmin from your laptop:
 
 - Host:      localhost
-- Port:      5433  (Mapped to avoid conflict with local DBs)
+- Port:      5433  (Mapped to 5433 to avoid local conflicts)
 - User:      admin
 - Password:  password123
 - Database:  geodb
 
-[6] SHUTDOWN
+*NOTE: Inside Python code, use port 5432 and host 'sedona-db'.*
+
+[7] SHUTDOWN
 ------------------------------------------------------------------------------
-When you are done for the day, stop the environment to save RAM:
+When finished, stop the engine to save RAM:
 
    docker compose down
-
-*Note: Your database data IS saved safely in the 'postgres_data' volume.*
 
 ------------------------------------------------------------------------------
 TROUBLESHOOTING
 ------------------------------------------------------------------------------
-1. ERROR: "Bind for 0.0.0.0:5433 failed: port is already allocated"
-   - Solution: Change the port in 'docker-compose.yml' from "5433:5432" to "5434:5432".
+1. ERROR: "Bind for 0.0.0.0:5433 failed"
+   - Fix: Change port in docker-compose.yml to "5434:5432".
 
-2. ERROR: "Exited with code 137" (Memory Crash)
-   - Solution: Open 'docker-compose.yml' and change SPARK_DRIVER_MEMORY to '2g'.
+2. ERROR: "Kernel died" or "Exit code 137"
+   - Fix: Open docker-compose.yml and lower SPARK_DRIVER_MEMORY to '2g'.
 
-3. ERROR: "command not found: docker"
-   - Solution: Ensure Docker Desktop is running in the background.
+3. ERROR: "Plain Text" in Notebook
+   - Fix: You forgot to select the Kernel (Step 5 above).
