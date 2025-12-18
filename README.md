@@ -15,12 +15,16 @@ AUTHOR:  Imran Mazlan
 
 [2] FOLDER STRUCTURE
 ------------------------------------------------------------------------------
+```
 /sedona-project
   ├── Dockerfile             (Builds Python/Java/Spark OS)
   ├── docker-compose.yml     (Orchestrates the Engine and Database)
   ├── requirements.txt       (Python libraries list)
   ├── main.py                (Test script)
+  ├── sedona_explain.md      (Sedona Explaination)
   └── test.ipynb             (Test notebook)
+
+  ```
 
 [3] SETUP & STARTUP (Do this once)
 ------------------------------------------------------------------------------
