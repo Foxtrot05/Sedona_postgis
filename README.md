@@ -30,10 +30,13 @@ AUTHOR:  Imran Mazlan
 ------------------------------------------------------------------------------
 1. Open terminal inside this folder.
 2. Build and Start the containers:
-   docker compose up -d --build
+  
+   - docker compose up -d --build
 
-3. Verify they are running:
-   docker compose ps
+5. Verify they are running:
+  
+   - docker compose ps
+   
    (You should see 'sedona_engine' and 'sedona_postgres' as "Up")
 
 [4] HOW TO RUN PYTHON SCRIPTS (.py)
@@ -79,7 +82,7 @@ To view data using DBeaver or pgAdmin from your laptop:
 ------------------------------------------------------------------------------
 When finished, stop the engine to save RAM:
 
-   docker compose down
+   - docker compose down
 
 ------------------------------------------------------------------------------
 TROUBLESHOOTING
