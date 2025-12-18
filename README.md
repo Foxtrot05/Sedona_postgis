@@ -2,10 +2,10 @@
 Apache Sedona project that involve PostgreSQL with PostGIS as extention.
 
 
-PROJECT: GeoAI Engine (Apache Sedona + PySpark + PostgreSQL)
-STATUS:  Dockerized / Ready for Deployment
+# PROJECT: GeoAI Engine (Apache Sedona + PySpark + PostgreSQL)
+# STATUS:  Dockerized / Ready for Deployment
 AUTHOR:  Imran Mazlan
-=
+
 
 [1] PREREQUISITES
 ------------------------------------------------------------------------------
